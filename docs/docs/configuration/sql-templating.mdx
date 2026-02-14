@@ -206,6 +206,65 @@ WHERE (
 This keeps the filter expandable in the UI while still allowing users to select from
 any level of the hierarchy.
 
+#### Dashboard-side `TREE_SELECT` filter implementation
+
+Superset ships native filters as chart plugins (for example `filter_select`,
+`filter_range`, and `filter_time`). If you need a dedicated dashboard filter type
+for organization hierarchies, implement and register a custom filter plugin such as
+`filter_tree_select` that renders Ant Design `TreeSelect`.
+
+At minimum:
+
+1. Add a plugin component (for example `TreeSelectFilterPlugin`) under
+   `superset-frontend/src/filters/components/TreeSelect/`.
+2. Register it in filter plugin bootstrap code with key `filter_tree_select`.
+3. Add `filter_tree_select` to supported native filter types in the dashboard filter
+   config modal.
+4. Return hierarchical option payloads (`label`, `value`, `children`) from transform
+   props so the tree can be expanded in place.
+
+Example component shape:
+
+```tsx
+import { TreeSelect } from '@superset-ui/core/components';
+
+type TreeNode = {
+  label: string;
+  value: string;
+  children?: TreeNode[];
+};
+
+type TreeSelectFilterProps = {
+  options: TreeNode[];
+  value?: string[];
+  onChange: (nextValue: string[]) => void;
+};
+
+export default function TreeSelectFilter({
+  options,
+  value = [],
+  onChange,
+}: TreeSelectFilterProps) {
+  return (
+    <TreeSelect
+      allowClear
+      multiple
+      treeData={options}
+      treeCheckable
+      treeDefaultExpandAll={false}
+      showSearch
+      value={value}
+      onChange={next => onChange(next as string[])}
+      placeholder="Select organization node(s)"
+    />
+  );
+}
+```
+
+With this setup, users can expand organization hierarchies and select any node on the
+dashboard, while backend SQL can keep using the `filter_values('org_path')` patterns
+shown above.
+
 Note ``_filters`` is not stored with the dataset. It's only used within the SQL Lab UI.
 
 Besides default Jinja templating, SQL lab also supports self-defined template processor by setting
