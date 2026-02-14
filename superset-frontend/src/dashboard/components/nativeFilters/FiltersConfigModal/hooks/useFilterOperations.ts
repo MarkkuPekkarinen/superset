@@ -27,6 +27,7 @@ import type { ItemStateManager } from './useItemStateManager';
 export const ALLOW_DEPENDENCIES = [
   'filter_range',
   'filter_select',
+  'filter_tree_select',
   'filter_time',
 ];
 

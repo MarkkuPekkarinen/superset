@@ -208,20 +208,16 @@ any level of the hierarchy.
 
 #### Dashboard-side `TREE_SELECT` filter implementation
 
-Superset ships native filters as chart plugins (for example `filter_select`,
-`filter_range`, and `filter_time`). If you need a dedicated dashboard filter type
-for organization hierarchies, implement and register a custom filter plugin such as
-`filter_tree_select` that renders Ant Design `TreeSelect`.
+Superset includes a native `filter_tree_select` plugin that renders Ant Design
+`TreeSelect` for expandable hierarchy selection in dashboard native filters.
 
-At minimum:
+Implementation files:
 
-1. Add a plugin component (for example `TreeSelectFilterPlugin`) under
-   `superset-frontend/src/filters/components/TreeSelect/`.
-2. Register it in filter plugin bootstrap code with key `filter_tree_select`.
-3. Add `filter_tree_select` to supported native filter types in the dashboard filter
-   config modal.
-4. Return hierarchical option payloads (`label`, `value`, `children`) from transform
-   props so the tree can be expanded in place.
+1. Plugin registration: `superset-frontend/src/filters/components/TreeSelect/index.ts`
+2. UI component: `superset-frontend/src/filters/components/TreeSelect/TreeSelectFilterPlugin.tsx`
+3. Filter type registration in dashboard config:
+   - `superset-frontend/src/constants.ts`
+   - `superset-frontend/src/dashboard/components/nativeFilters/FiltersConfigModal/FiltersConfigForm/constants.ts`
 
 Example component shape:
 
