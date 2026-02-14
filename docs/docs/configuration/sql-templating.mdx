@@ -159,6 +159,53 @@ WHERE action in {{ filter_values('action_type')|where_in }}
 GROUP BY action
 ```
 
+### Hierarchical organization filters with TreeSelect
+
+When dashboard users pick nodes from a native filter configured with `TreeSelect`,
+you can map those values to hierarchical predicates in virtual datasets.
+
+If your PostgreSQL model stores hierarchy using `ltree`, return node paths from the
+filter (for example `company.eu.finland`) and expand the predicate with
+`filter_values`:
+
+```sql
+SELECT *
+FROM organization_fact
+WHERE (
+  {% set org_paths = filter_values('org_path') %}
+  {% if org_paths %}
+    {% for path in org_paths %}
+      org_ltree <@ '{{ path }}'::ltree
+      {% if not loop.last %} OR {% endif %}
+    {% endfor %}
+  {% else %}
+    true
+  {% endif %}
+)
+```
+
+For text-based hierarchy models (for example `/company/eu/finland`), apply the same
+pattern with a prefix match:
+
+```sql
+SELECT *
+FROM organization_fact
+WHERE (
+  {% set org_paths = filter_values('org_path') %}
+  {% if org_paths %}
+    {% for path in org_paths %}
+      org_path = '{{ path }}' OR org_path LIKE '{{ path }}/%'
+      {% if not loop.last %} OR {% endif %}
+    {% endfor %}
+  {% else %}
+    true
+  {% endif %}
+)
+```
+
+This keeps the filter expandable in the UI while still allowing users to select from
+any level of the hierarchy.
+
 Note ``_filters`` is not stored with the dataset. It's only used within the SQL Lab UI.
 
 Besides default Jinja templating, SQL lab also supports self-defined template processor by setting
