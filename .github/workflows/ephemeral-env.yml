@@ -204,7 +204,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: superset-ci
-          IMAGE_TAG: apache/superset:${{ needs.ephemeral-env-label.outputs.sha }}-ci
+          IMAGE_TAG: markkupekkarinen/superset:${{ needs.ephemeral-env-label.outputs.sha }}-ci
           PR_NUMBER: ${{ github.event.inputs.issue_number || github.event.pull_request.number }}
         run: |
           docker tag $IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:pr-$PR_NUMBER-ci

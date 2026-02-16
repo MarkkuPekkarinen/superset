@@ -16,9 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-export { default as SelectFilterPlugin } from './Select';
-export { default as RangeFilterPlugin } from './Range';
-export { default as TimeFilterPlugin } from './Time';
-export { default as TimeColumnFilterPlugin } from './TimeColumn';
-export { default as TimeGrainFilterPlugin } from './TimeGrain';
-export { default as TreeSelectFilterPlugin } from './TreeSelect';
+import {
+  DEFAULT_FORM_DATA,
+  PluginFilterSelectChartProps,
+  PluginFilterSelectProps,
+  PluginFilterSelectQueryFormData,
+  SelectValue,
+} from '../Select/types';
+
+export type PluginFilterTreeSelectProps = PluginFilterSelectProps;
+
+export type PluginFilterTreeSelectChartProps = PluginFilterSelectChartProps;
+
+export type PluginFilterTreeSelectQueryFormData =
+  PluginFilterSelectQueryFormData;
+
+export { DEFAULT_FORM_DATA };
+
+export type { SelectValue };

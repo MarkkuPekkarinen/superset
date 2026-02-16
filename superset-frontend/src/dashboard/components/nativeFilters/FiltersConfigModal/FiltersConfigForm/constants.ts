@@ -34,6 +34,12 @@ export const FILTER_SUPPORTED_TYPES = {
     GenericDataType.Numeric,
     GenericDataType.Temporal,
   ],
+  filter_tree_select: [
+    GenericDataType.Boolean,
+    GenericDataType.String,
+    GenericDataType.Numeric,
+    GenericDataType.Temporal,
+  ],
   filter_range: [GenericDataType.Numeric],
 };
 

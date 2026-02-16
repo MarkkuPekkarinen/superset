@@ -159,6 +159,108 @@ WHERE action in {{ filter_values('action_type')|where_in }}
 GROUP BY action
 ```
 
+### Hierarchical organization filters with TreeSelect
+
+When dashboard users pick nodes from a native filter configured with `TreeSelect`,
+you can map those values to hierarchical predicates in virtual datasets.
+
+If your PostgreSQL model stores hierarchy using `ltree`, return node paths from the
+filter (for example `company.eu.finland`) and expand the predicate with
+`filter_values`:
+
+```sql
+SELECT *
+FROM organization_fact
+WHERE (
+  {% set org_paths = filter_values('org_path') %}
+  {% if org_paths %}
+    {% for path in org_paths %}
+      org_ltree <@ '{{ path }}'::ltree
+      {% if not loop.last %} OR {% endif %}
+    {% endfor %}
+  {% else %}
+    true
+  {% endif %}
+)
+```
+
+For text-based hierarchy models (for example `/company/eu/finland`), apply the same
+pattern with a prefix match:
+
+```sql
+SELECT *
+FROM organization_fact
+WHERE (
+  {% set org_paths = filter_values('org_path') %}
+  {% if org_paths %}
+    {% for path in org_paths %}
+      org_path = '{{ path }}' OR org_path LIKE '{{ path }}/%'
+      {% if not loop.last %} OR {% endif %}
+    {% endfor %}
+  {% else %}
+    true
+  {% endif %}
+)
+```
+
+This keeps the filter expandable in the UI while still allowing users to select from
+any level of the hierarchy.
+
+#### Dashboard-side `TREE_SELECT` filter implementation
+
+Superset includes a native `filter_tree_select` plugin that renders Ant Design
+`TreeSelect` for expandable hierarchy selection in dashboard native filters.
+
+Implementation files:
+
+1. Plugin registration: `superset-frontend/src/filters/components/TreeSelect/index.ts`
+2. UI component: `superset-frontend/src/filters/components/TreeSelect/TreeSelectFilterPlugin.tsx`
+3. Filter type registration in dashboard config:
+   - `superset-frontend/src/constants.ts`
+   - `superset-frontend/src/dashboard/components/nativeFilters/FiltersConfigModal/FiltersConfigForm/constants.ts`
+
+Example component shape:
+
+```tsx
+import { TreeSelect } from '@superset-ui/core/components';
+
+type TreeNode = {
+  label: string;
+  value: string;
+  children?: TreeNode[];
+};
+
+type TreeSelectFilterProps = {
+  options: TreeNode[];
+  value?: string[];
+  onChange: (nextValue: string[]) => void;
+};
+
+export default function TreeSelectFilter({
+  options,
+  value = [],
+  onChange,
+}: TreeSelectFilterProps) {
+  return (
+    <TreeSelect
+      allowClear
+      multiple
+      treeData={options}
+      treeCheckable
+      treeDefaultExpandAll={false}
+      showSearch
+      value={value}
+      onChange={next => onChange(next as string[])}
+      placeholder="Select organization node(s)"
+    />
+  );
+}
+```
+
+With this setup, users can expand organization hierarchies and select any node on the
+dashboard, while backend SQL can keep using the `filter_values('org_path')` patterns
+shown above.
+
 Note ``_filters`` is not stored with the dataset. It's only used within the SQL Lab UI.
 
 Besides default Jinja templating, SQL lab also supports self-defined template processor by setting
