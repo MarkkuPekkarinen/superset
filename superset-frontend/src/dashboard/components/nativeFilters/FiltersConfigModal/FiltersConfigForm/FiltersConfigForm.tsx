@@ -256,7 +256,11 @@ export interface FiltersConfigFormProps {
   getDependencySuggestion: (filterId: string) => string;
 }
 
-const FILTERS_WITH_ADHOC_FILTERS = ['filter_select', 'filter_tree_select', 'filter_range'];
+const FILTERS_WITH_ADHOC_FILTERS = [
+  'filter_select',
+  'filter_tree_select',
+  'filter_range',
+];
 
 // TODO: Rename the filter plugins and remove this mapping
 const FILTER_TYPE_NAME_MAPPING = {

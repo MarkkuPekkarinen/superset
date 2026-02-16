@@ -160,11 +160,13 @@ export default function TreeSelectFilterPlugin(
 
   const handleChange = useCallback<NonNullable<TreeSelectProps['onChange']>>(
     nextValue => {
-      const normalized = (Array.isArray(nextValue)
-        ? nextValue.map(item => String(item))
-        : nextValue
-          ? [String(nextValue)]
-          : undefined) as SelectValue;
+      const normalized = (
+        Array.isArray(nextValue)
+          ? nextValue.map(item => String(item))
+          : nextValue
+            ? [String(nextValue)]
+            : undefined
+      ) as SelectValue;
 
       setValue(normalized);
 
@@ -187,13 +189,7 @@ export default function TreeSelectFilterPlugin(
       });
       setFilterActive(!!normalized?.length);
     },
-    [
-      col,
-      enableEmptyFilter,
-      inverseSelection,
-      setDataMask,
-      setFilterActive,
-    ],
+    [col, enableEmptyFilter, inverseSelection, setDataMask, setFilterActive],
   );
 
   return (
