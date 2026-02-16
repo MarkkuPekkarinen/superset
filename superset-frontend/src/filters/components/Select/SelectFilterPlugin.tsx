@@ -49,10 +49,7 @@ import { FilterBarOrientation } from 'src/dashboard/types';
 import { getDataRecordFormatter, getSelectExtraFormData } from '../../utils';
 import { FilterPluginStyle, StatusMessage } from '../common';
 import { PluginFilterSelectProps, SelectValue } from './types';
-import {
-  buildTreeSelectData,
-  normalizeTreeSelectValue,
-} from './treeUtils';
+import { buildTreeSelectData, normalizeTreeSelectValue } from './treeUtils';
 
 type DataMaskAction =
   | { type: 'ownState'; ownState: JsonObject }
@@ -503,7 +500,7 @@ export default function PluginFilterSelect(props: PluginFilterSelectProps) {
   };
 
   const treeSelectValue = multiSelect
-    ? (filterState.value || [])
+    ? filterState.value || []
     : filterState.value?.[0];
 
   return (

@@ -44,7 +44,9 @@ const createNode = (title: string, value: string): InternalNode => ({
   children: {},
 });
 
-const toSortedTree = (nodeMap: Record<string, InternalNode>): TreeSelectDataNode[] =>
+const toSortedTree = (
+  nodeMap: Record<string, InternalNode>,
+): TreeSelectDataNode[] =>
   Object.values(nodeMap)
     .sort((a, b) => a.value.localeCompare(b.value))
     .map(node => ({
