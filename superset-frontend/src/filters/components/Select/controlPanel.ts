@@ -90,9 +90,6 @@ const config: ControlPanelConfig = {
               default: enableTreeSelect,
               renderTrigger: true,
               resetConfig: true,
-              description: t(
-                'Renders values as a hierarchy using a path delimiter so users can expand/collapse and pick from any tree level.',
-              ),
             },
           },
         ],
@@ -104,9 +101,6 @@ const config: ControlPanelConfig = {
               label: t('Tree path delimiter'),
               default: treeDelimiter,
               renderTrigger: true,
-              description: t(
-                'Separator used to build tree levels from option values, for example "/" (text path) or "." (ltree text).',
-              ),
             },
           },
         ],
