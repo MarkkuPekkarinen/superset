@@ -27,6 +27,8 @@ const {
   enableEmptyFilter,
   inverseSelection,
   multiSelect,
+  enableTreeSelect,
+  treeDelimiter,
   creatable,
   defaultToFirstItem,
   searchAllOptions,
@@ -76,6 +78,35 @@ const config: ControlPanelConfig = {
               default: creatable,
               affectsDataMask: true,
               renderTrigger: true,
+            },
+          },
+        ],
+        [
+          {
+            name: 'enableTreeSelect',
+            config: {
+              type: 'CheckboxControl',
+              label: t('Use TreeSelect hierarchy UI'),
+              default: enableTreeSelect,
+              renderTrigger: true,
+              resetConfig: true,
+              description: t(
+                'Renders values as a hierarchy using a path delimiter so users can expand/collapse and pick from any tree level.',
+              ),
+            },
+          },
+        ],
+        [
+          {
+            name: 'treeDelimiter',
+            config: {
+              type: 'TextControl',
+              label: t('Tree path delimiter'),
+              default: treeDelimiter,
+              renderTrigger: true,
+              description: t(
+                'Separator used to build tree levels from option values, for example "/" (text path) or "." (ltree text).',
+              ),
             },
           },
         ],

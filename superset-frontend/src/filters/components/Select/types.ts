@@ -38,6 +38,8 @@ export interface PluginFilterSelectCustomizeProps {
   inverseSelection: boolean;
   creatable: boolean;
   multiSelect: boolean;
+  enableTreeSelect: boolean;
+  treeDelimiter: string;
   defaultToFirstItem: boolean;
   searchAllOptions: boolean;
   sortAscending?: boolean;
@@ -76,6 +78,8 @@ export const DEFAULT_FORM_DATA: PluginFilterSelectCustomizeProps = {
   defaultToFirstItem: false,
   creatable: true,
   multiSelect: true,
+  enableTreeSelect: false,
+  treeDelimiter: '/',
   searchAllOptions: false,
   sortAscending: true,
 };
