@@ -38,8 +38,8 @@ export interface PluginFilterSelectCustomizeProps {
   inverseSelection: boolean;
   creatable: boolean;
   multiSelect: boolean;
-  enableTreeSelect: boolean;
-  treeDelimiter: string;
+  enableTreeSelect?: boolean;
+  treeDelimiter?: string;
   defaultToFirstItem: boolean;
   searchAllOptions: boolean;
   sortAscending?: boolean;
