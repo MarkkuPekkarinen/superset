@@ -17,22 +17,22 @@
  * under the License.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getColumnLabel } from '@superset-ui/core';
-import { FilterBarOrientation } from 'src/dashboard/types';
+import { ensureIsArray, getColumnLabel } from '@superset-ui/core';
 import { getSelectExtraFormData } from '../../utils';
 import { FilterPluginStyle } from '../common';
-import {
-  TreeSelect,
-  type DataNode,
-  type TreeSelectProps,
-} from '@superset-ui/core/components';
+import { TreeSelect, type TreeSelectProps } from '@superset-ui/core/components';
 import {
   DEFAULT_FORM_DATA,
   PluginFilterTreeSelectProps,
   SelectValue,
 } from './types';
 
-const orientationMap = new Map<string, FilterBarOrientation>();
+type TreeNode = {
+  key: string;
+  value: string;
+  title: string;
+  children?: TreeNode[];
+};
 
 function normalizeValue(value: unknown): string | undefined {
   if (value === null || value === undefined) {
@@ -41,8 +41,8 @@ function normalizeValue(value: unknown): string | undefined {
   return String(value);
 }
 
-function buildTreeData(values: string[]): DataNode[] {
-  type MutableNode = DataNode & { childrenMap: Map<string, MutableNode> };
+function buildTreeData(values: string[]): TreeNode[] {
+  type MutableNode = TreeNode & { childrenMap: Map<string, MutableNode> };
 
   const roots = new Map<string, MutableNode>();
 
@@ -93,7 +93,7 @@ function buildTreeData(values: string[]): DataNode[] {
     });
   });
 
-  const convertNode = (node: MutableNode): DataNode => ({
+  const convertNode = (node: MutableNode): TreeNode => ({
     key: node.key,
     value: node.value,
     title: node.title,
@@ -122,25 +122,19 @@ export default function TreeSelectFilterPlugin(
     inputRef,
     clearAllTrigger,
     onClearAllComplete,
-    filterBarOrientation,
   } = props;
 
-  const {
-    enableEmptyFilter,
-    inverseSelection,
-    showSearch,
-    multiSelect,
-  } = { ...DEFAULT_FORM_DATA, ...formData };
+  const { enableEmptyFilter, inverseSelection, multiSelect } = {
+    ...DEFAULT_FORM_DATA,
+    ...formData,
+  };
 
-  const groupby = useMemo(() => [getColumnLabel(formData.groupby)], [formData]);
+  const groupby = useMemo(
+    () => ensureIsArray(formData.groupby).map(getColumnLabel),
+    [formData.groupby],
+  );
   const [col] = groupby;
   const [value, setValue] = useState<SelectValue>(filterState?.value);
-
-  useEffect(() => {
-    if (filterBarOrientation) {
-      orientationMap.set(formData.nativeFilterId, filterBarOrientation);
-    }
-  }, [filterBarOrientation, formData.nativeFilterId]);
 
   useEffect(() => {
     setValue(filterState?.value);
@@ -154,6 +148,10 @@ export default function TreeSelectFilterPlugin(
   }, [clearAllTrigger, formData.nativeFilterId, onClearAllComplete]);
 
   const options = useMemo(() => {
+    if (!col) {
+      return [];
+    }
+
     const values = data
       .map(row => normalizeValue(row[col]))
       .filter((item): item is string => !!item);
@@ -178,12 +176,14 @@ export default function TreeSelectFilterPlugin(
           label: normalized?.join(', '),
           excludeFilterValues: inverseSelection,
         },
-        extraFormData: getSelectExtraFormData(
-          col,
-          normalized,
-          emptyFilter,
-          inverseSelection,
-        ),
+        extraFormData: col
+          ? getSelectExtraFormData(
+              col,
+              normalized,
+              emptyFilter,
+              inverseSelection,
+            )
+          : {},
       });
       setFilterActive(!!normalized?.length);
     },
@@ -202,7 +202,7 @@ export default function TreeSelectFilterPlugin(
         ref={inputRef}
         allowClear
         treeCheckable={multiSelect}
-        showSearch={showSearch}
+        showSearch
         disabled={isRefreshing}
         style={{ width: '100%' }}
         value={value as string[] | undefined}
