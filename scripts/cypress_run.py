@@ -156,8 +156,7 @@ def run_cypress_for_test_file(
             electron_return_code, _ = run_shell_command(electron_cmd)
             if electron_return_code == 0:
                 print(
-                    "Test passed with Electron fallback after Chromium renderer "
-                    "crash."
+                    "Test passed with Electron fallback after Chromium renderer crash."
                 )
                 return 0
 

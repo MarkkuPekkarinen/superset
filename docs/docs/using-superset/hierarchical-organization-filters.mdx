@@ -180,7 +180,9 @@ type InternalNode = {
   __children: Record<string, InternalNode>;
 };
 
-export function buildTreeFromPaths(rows: Array<{ name: string; path_text: string }>): TreeNode[] {
+export function buildTreeFromPaths(
+  rows: Array<{ name: string; path_text: string }>,
+): TreeNode[] {
   const root: Record<string, InternalNode> = {};
 
   rows.forEach(({ name, path_text }) => {
