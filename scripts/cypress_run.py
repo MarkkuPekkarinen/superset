@@ -25,6 +25,8 @@ REPO = os.getenv("GITHUB_REPOSITORY") or "apache/superset"
 GITHUB_EVENT_NAME = os.getenv("GITHUB_EVENT_NAME") or "push"
 CYPRESS_RECORD_KEY = os.getenv("CYPRESS_RECORD_KEY") or ""
 RENDERER_CRASH_SIGNAL = "Renderer process just crashed"
+CHROMIUM_BROWSERS = {"chrome", "chromium", "edge"}
+CHROME_FLAGS = "--disable-dev-shm-usage"
 
 
 def build_cypress_command(
@@ -58,6 +60,11 @@ def build_cypress_command(
                 f"--ci-build-id {build_id}",
             ]
         )
+
+    if browser in CHROMIUM_BROWSERS:
+        # Keep compatibility with the previous CI invocation style where
+        # Chromium flags are passed through to the browser process.
+        command_parts.append(f"-- {CHROME_FLAGS}")
 
     return " ".join(command_parts)
 
@@ -131,7 +138,7 @@ def run_cypress_for_test_file(
 
         print(f"Test {test_file} failed on attempt {attempt + 1}")
 
-        if renderer_crashed and browser == "chrome":
+        if renderer_crashed and browser in CHROMIUM_BROWSERS:
             print(
                 "Detected Chromium renderer crash; retrying the same spec once "
                 "with Electron as a fallback."
