@@ -115,9 +115,10 @@ class TestRolePermission(SupersetTestCase):
     """Testing export role permissions."""
 
     def setUp(self):
-        # Ensure we start from a clean session even if a previous test left the
-        # transaction in a failed state.
-        db.session.rollback()
+        # Recover only from failed transactions without rolling back healthy
+        # fixture setup done by pytest markers.
+        if not db.session.is_active:
+            db.session.rollback()
 
         schema = get_example_default_schema()
         security_manager.add_role(SCHEMA_ACCESS_ROLE)
@@ -172,7 +173,8 @@ class TestRolePermission(SupersetTestCase):
         db.session.commit()
 
     def tearDown(self):
-        db.session.rollback()
+        if not db.session.is_active:
+            db.session.rollback()
         ds = (
             db.session.query(SqlaTable)
             .filter_by(table_name="wb_health_population", schema="temp_schema")
