@@ -166,7 +166,9 @@ class TestRolePermission(SupersetTestCase):
             s.schema_perm = ds.schema_perm
         create_schema_perm("[examples].[temp_schema]")
         gamma_user = security_manager.find_user(username="gamma")
-        gamma_user.roles.append(security_manager.find_role(SCHEMA_ACCESS_ROLE))
+        schema_access_role = security_manager.find_role(SCHEMA_ACCESS_ROLE)
+        if schema_access_role not in gamma_user.roles:
+            gamma_user.roles.append(schema_access_role)
         db.session.commit()
 
     def tearDown(self):
@@ -191,7 +193,12 @@ class TestRolePermission(SupersetTestCase):
 
             delete_schema_perm(schema_perm)
 
-        db.session.delete(security_manager.find_role(SCHEMA_ACCESS_ROLE))
+        schema_access_role = security_manager.find_role(SCHEMA_ACCESS_ROLE)
+        if schema_access_role:
+            gamma_user = security_manager.find_user(username="gamma")
+            if schema_access_role in gamma_user.roles:
+                gamma_user.roles.remove(schema_access_role)
+            db.session.delete(schema_access_role)
         db.session.commit()
         super().tearDown()
 
