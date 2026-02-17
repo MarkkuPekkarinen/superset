@@ -115,6 +115,10 @@ class TestRolePermission(SupersetTestCase):
     """Testing export role permissions."""
 
     def setUp(self):
+        # Ensure we start from a clean session even if a previous test left the
+        # transaction in a failed state.
+        db.session.rollback()
+
         schema = get_example_default_schema()
         security_manager.add_role(SCHEMA_ACCESS_ROLE)
         db.session.commit()
@@ -145,6 +149,10 @@ class TestRolePermission(SupersetTestCase):
             .filter_by(table_name="wb_health_population", schema=schema)
             .first()
         )
+        if ds is None:
+            raise RuntimeError(
+                "Expected wb_health_population dataset to exist for security tests"
+            )
         ds.schema = "temp_schema"
         ds.schema_perm = ds.get_schema_perm()
 
@@ -162,24 +170,27 @@ class TestRolePermission(SupersetTestCase):
         db.session.commit()
 
     def tearDown(self):
+        db.session.rollback()
         ds = (
             db.session.query(SqlaTable)
             .filter_by(table_name="wb_health_population", schema="temp_schema")
             .first()
         )
-        schema_perm = ds.schema_perm
-        ds.schema = get_example_default_schema()
-        ds.schema_perm = None
-        ds_slices = (
-            db.session.query(Slice)
-            .filter_by(datasource_type=DatasourceType.TABLE)
-            .filter_by(datasource_id=ds.id)
-            .all()
-        )
-        for s in ds_slices:
-            s.schema_perm = None
+        if ds:
+            schema_perm = ds.schema_perm
+            ds.schema = get_example_default_schema()
+            ds.schema_perm = None
+            ds_slices = (
+                db.session.query(Slice)
+                .filter_by(datasource_type=DatasourceType.TABLE)
+                .filter_by(datasource_id=ds.id)
+                .all()
+            )
+            for s in ds_slices:
+                s.schema_perm = None
 
-        delete_schema_perm(schema_perm)
+            delete_schema_perm(schema_perm)
+
         db.session.delete(security_manager.find_role(SCHEMA_ACCESS_ROLE))
         db.session.commit()
         super().tearDown()
