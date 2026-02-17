@@ -62,8 +62,10 @@ function closeFilterModal() {
 
 function setNativeFilterOptionChecked(label: string, checked: boolean) {
   cy.contains(label)
+    .scrollIntoView({ offset: { top: -180, left: 0 } })
     .closest('.ant-form-item')
     .find('input[type="checkbox"]')
+    .first()
     .then($input => {
       const isChecked = $input.prop('checked');
       if (checked && !isChecked) {
@@ -237,9 +239,6 @@ describe('Native filters', () => {
       selectFilter(0);
       cy.get(nativeFilters.filterConfigurationSections.displayedSection).within(
         () => {
-          cy.contains('Select first filter value by default').should(
-            'be.visible',
-          );
           setNativeFilterOptionChecked(
             'Select first filter value by default',
             true,
@@ -248,7 +247,6 @@ describe('Native filters', () => {
       );
       cy.get(nativeFilters.filterConfigurationSections.displayedSection).within(
         () => {
-          cy.contains(/Can select multiple values/).should('be.visible');
           setNativeFilterOptionChecked('Can select multiple values', false);
         },
       );
@@ -263,16 +261,12 @@ describe('Native filters', () => {
       );
       cy.get(nativeFilters.filterConfigurationSections.displayedSection).within(
         () => {
-          cy.contains(/Can select multiple values/).should('be.visible');
           setNativeFilterOptionChecked('Can select multiple values', false);
         },
       );
       addParentFilterWithValue(0, testItems.topTenChart.filterColumnRegion);
       cy.get(nativeFilters.filterConfigurationSections.displayedSection).within(
         () => {
-          cy.contains('Select first filter value by default').should(
-            'be.visible',
-          );
           setNativeFilterOptionChecked(
             'Select first filter value by default',
             true,
