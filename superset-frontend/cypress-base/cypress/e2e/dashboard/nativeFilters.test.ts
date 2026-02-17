@@ -60,6 +60,21 @@ function closeFilterModal() {
   });
 }
 
+function setNativeFilterOptionChecked(label: string, checked: boolean) {
+  cy.contains(label)
+    .closest('.ant-form-item')
+    .find('input[type="checkbox"]')
+    .then($input => {
+      const isChecked = $input.prop('checked');
+      if (checked && !isChecked) {
+        cy.wrap($input).check({ force: true });
+      }
+      if (!checked && isChecked) {
+        cy.wrap($input).uncheck({ force: true });
+      }
+    });
+}
+
 describe('Native filters', () => {
   describe('Nativefilters tests initial state required', () => {
     beforeEach(() => {
@@ -222,16 +237,19 @@ describe('Native filters', () => {
       selectFilter(0);
       cy.get(nativeFilters.filterConfigurationSections.displayedSection).within(
         () => {
-          cy.contains('Select first filter value by default')
-            .should('be.visible')
-            .click();
+          cy.contains('Select first filter value by default').should(
+            'be.visible',
+          );
+          setNativeFilterOptionChecked(
+            'Select first filter value by default',
+            true,
+          );
         },
       );
       cy.get(nativeFilters.filterConfigurationSections.displayedSection).within(
         () => {
-          cy.contains(/Can select multiple values/)
-            .should('be.visible')
-            .click();
+          cy.contains(/Can select multiple values/).should('be.visible');
+          setNativeFilterOptionChecked('Can select multiple values', false);
         },
       );
 
@@ -245,17 +263,20 @@ describe('Native filters', () => {
       );
       cy.get(nativeFilters.filterConfigurationSections.displayedSection).within(
         () => {
-          cy.contains(/Can select multiple values/)
-            .should('be.visible')
-            .click();
+          cy.contains(/Can select multiple values/).should('be.visible');
+          setNativeFilterOptionChecked('Can select multiple values', false);
         },
       );
       addParentFilterWithValue(0, testItems.topTenChart.filterColumnRegion);
       cy.get(nativeFilters.filterConfigurationSections.displayedSection).within(
         () => {
-          cy.contains('Select first filter value by default')
-            .should('be.visible')
-            .click();
+          cy.contains('Select first filter value by default').should(
+            'be.visible',
+          );
+          setNativeFilterOptionChecked(
+            'Select first filter value by default',
+            true,
+          );
         },
       );
 
