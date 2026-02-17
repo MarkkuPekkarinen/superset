@@ -122,17 +122,25 @@ class TestRolePermission(SupersetTestCase):
         # Cleanup any stale state from interrupted test runs so we don't violate
         # the unique constraint on (database_id, schema, table_name) when moving
         # wb_health_population into temp_schema.
+        default_dataset = (
+            db.session.query(SqlaTable)
+            .filter_by(table_name="wb_health_population", schema=schema)
+            .first()
+        )
         stale_temp_dataset = (
             db.session.query(SqlaTable)
             .filter_by(table_name="wb_health_population", schema="temp_schema")
             .first()
         )
         if stale_temp_dataset:
-            stale_temp_dataset.schema = schema
-            stale_temp_dataset.schema_perm = None
+            if default_dataset and stale_temp_dataset.id != default_dataset.id:
+                db.session.delete(stale_temp_dataset)
+            else:
+                stale_temp_dataset.schema = schema
+                stale_temp_dataset.schema_perm = None
             db.session.commit()
 
-        ds = (
+        ds = default_dataset or (
             db.session.query(SqlaTable)
             .filter_by(table_name="wb_health_population", schema=schema)
             .first()
