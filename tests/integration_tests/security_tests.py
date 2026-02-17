@@ -102,11 +102,12 @@ def create_schema_perm(view_menu_name: str) -> None:
 
 
 def delete_schema_perm(view_menu_name: str) -> None:
-    pv = security_manager.find_permission_view_menu("schema_access", "[examples].[2]")
-    security_manager.del_permission_role(
-        security_manager.find_role(SCHEMA_ACCESS_ROLE), pv
-    )
-    security_manager.del_permission_view_menu("schema_access", "[examples].[2]")
+    pv = security_manager.find_permission_view_menu("schema_access", view_menu_name)
+    if pv:
+        security_manager.del_permission_role(
+            security_manager.find_role(SCHEMA_ACCESS_ROLE), pv
+        )
+        security_manager.del_permission_view_menu("schema_access", view_menu_name)
     return None
 
 
@@ -117,6 +118,19 @@ class TestRolePermission(SupersetTestCase):
         schema = get_example_default_schema()
         security_manager.add_role(SCHEMA_ACCESS_ROLE)
         db.session.commit()
+
+        # Cleanup any stale state from interrupted test runs so we don't violate
+        # the unique constraint on (database_id, schema, table_name) when moving
+        # wb_health_population into temp_schema.
+        stale_temp_dataset = (
+            db.session.query(SqlaTable)
+            .filter_by(table_name="wb_health_population", schema="temp_schema")
+            .first()
+        )
+        if stale_temp_dataset:
+            stale_temp_dataset.schema = schema
+            stale_temp_dataset.schema_perm = None
+            db.session.commit()
 
         ds = (
             db.session.query(SqlaTable)
