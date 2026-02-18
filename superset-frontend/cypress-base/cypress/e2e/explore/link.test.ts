@@ -110,6 +110,58 @@ describe('Test explore links', () => {
     const chartName = 'Growth Rate';
     const newChartName = `${chartName} [${nanoid()}]`;
     const dashboardTitle = `Test dashboard [${nanoid()}]`;
+    const saveDashboardFormSelector =
+      '[data-test="save-chart-modal-select-dashboard-form"]';
+
+    const selectDashboard = (title: string) => {
+      cy.get(saveDashboardFormSelector)
+        .find('input[aria-label^="Select a dashboard"]')
+        .click({ force: true })
+        .clear({ force: true })
+        .type(title, { force: true });
+
+      cy.get('.ant-select-dropdown')
+        .find('.ant-select-item-option-content')
+        .contains(title)
+        .first()
+        .click({ force: true });
+
+      cy.get(saveDashboardFormSelector)
+        .find('.ant-select-selection-item')
+        .contains(title)
+        .should('be.visible');
+    };
+
+    const assertDashboardCount = (
+      title: string,
+      attemptsLeft = 4,
+      delayMs = 500,
+    ): void => {
+      const query = {
+        filters: [
+          {
+            col: 'dashboard_title',
+            opr: 'eq',
+            value: title,
+          },
+        ],
+      };
+
+      cy.request(apiURL('/api/v1/dashboard/', query)).then(response => {
+        if (response.body.count === 1) {
+          return;
+        }
+
+        if (attemptsLeft === 0) {
+          expect(response.body.count).equals(1);
+          return;
+        }
+
+        cy.wait(delayMs).then(() =>
+          assertDashboardCount(title, attemptsLeft - 1, delayMs),
+        );
+      });
+    };
 
     cy.visitChartByName(chartName);
     cy.verifySliceSuccess({ waitAlias: '@chartData' });
@@ -120,24 +172,11 @@ describe('Test explore links', () => {
     cy.get('[data-test="new-chart-name"]').clear();
     cy.get('[data-test="new-chart-name"]').type(newChartName);
     // Add a new option using the "CreatableSelect" feature
-    cy.get('[data-test="save-chart-modal-select-dashboard-form"]')
-      .find('input[aria-label="Select a dashboard"]')
-      .type(`${dashboardTitle}{enter}`, { force: true });
+    selectDashboard(dashboardTitle);
 
     cy.get('[data-test="btn-modal-save"]').click();
     cy.verifySliceSuccess({ waitAlias: '@chartData' });
-    let query = {
-      filters: [
-        {
-          col: 'dashboard_title',
-          opr: 'eq',
-          value: dashboardTitle,
-        },
-      ],
-    };
-    cy.request(apiURL('/api/v1/dashboard/', query)).then(response => {
-      expect(response.body.count).equals(1);
-    });
+    assertDashboardCount(dashboardTitle);
 
     cy.visitChartByName(newChartName);
     cy.verifySliceSuccess({ waitAlias: '@chartData' });
@@ -149,13 +188,11 @@ describe('Test explore links', () => {
     cy.get('[data-test="new-chart-name"]').type(newChartName);
     // This time around, typing the same dashboard name
     // will select the existing one
-    cy.get('[data-test="save-chart-modal-select-dashboard-form"]')
-      .find('input[aria-label^="Select a dashboard"]')
-      .type(`${dashboardTitle}{enter}`, { force: true });
+    selectDashboard(dashboardTitle);
 
     cy.get('[data-test="btn-modal-save"]').click();
     cy.verifySliceSuccess({ waitAlias: '@chartData' });
-    query = {
+    let query = {
       filters: [
         {
           col: 'slice_name',
