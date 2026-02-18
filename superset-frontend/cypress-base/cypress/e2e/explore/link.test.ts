@@ -118,13 +118,7 @@ describe('Test explore links', () => {
         .find('input[aria-label^="Select a dashboard"]')
         .click({ force: true })
         .clear({ force: true })
-        .type(title, { force: true });
-
-      cy.get('.ant-select-dropdown')
-        .find('.ant-select-item-option-content')
-        .contains(title)
-        .first()
-        .click({ force: true });
+        .type(`${title}{enter}`, { force: true });
 
       cy.get(saveDashboardFormSelector)
         .find('.ant-select-selection-item')
