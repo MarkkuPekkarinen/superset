@@ -115,11 +115,57 @@ def delete_schema_perm(view_menu_name: str) -> None:
 class TestRolePermission(SupersetTestCase):
     """Testing export role permissions."""
 
+    _TEMP_DATABASE_NAMES = ("tmp_db", "tmp_db1", "tmp_db2", "tmp_database")
+
+    def _cleanup_temp_security_artifacts(self) -> None:
+        if not db.session.is_active:
+            db.session.rollback()
+
+        temp_database_ids = [
+            database.id
+            for database in db.session.query(Database)
+            .filter(Database.database_name.in_(self._TEMP_DATABASE_NAMES))
+            .all()
+        ]
+        if not temp_database_ids:
+            return
+
+        temp_table_ids = [
+            table.id
+            for table in db.session.query(SqlaTable)
+            .filter(SqlaTable.database_id.in_(temp_database_ids))
+            .all()
+        ]
+
+        if temp_table_ids:
+            (
+                db.session.query(Slice)
+                .filter(
+                    Slice.datasource_type == DatasourceType.TABLE,
+                    Slice.datasource_id.in_(temp_table_ids),
+                )
+                .delete(synchronize_session=False)
+            )
+            (
+                db.session.query(SqlaTable)
+                .filter(SqlaTable.id.in_(temp_table_ids))
+                .delete(synchronize_session=False)
+            )
+
+        (
+            db.session.query(Database)
+            .filter(Database.id.in_(temp_database_ids))
+            .delete(synchronize_session=False)
+        )
+        db.session.commit()
+
     def setUp(self):
         # Recover only from failed transactions without rolling back healthy
         # fixture setup done by pytest markers.
         if not db.session.is_active:
             db.session.rollback()
+
+        self._cleanup_temp_security_artifacts()
 
         schema = get_example_default_schema()
         security_manager.add_role(SCHEMA_ACCESS_ROLE)
@@ -201,6 +247,7 @@ class TestRolePermission(SupersetTestCase):
                 gamma_user.roles.remove(schema_access_role)
             db.session.delete(schema_access_role)
         db.session.commit()
+        self._cleanup_temp_security_artifacts()
         super().tearDown()
 
     def test_after_insert_dataset(self):
