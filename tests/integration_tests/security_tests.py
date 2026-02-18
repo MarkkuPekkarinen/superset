@@ -102,8 +102,9 @@ def create_schema_perm(view_menu_name: str) -> None:
 
 
 def delete_schema_perm(view_menu_name: str) -> None:
-    pv = security_manager.find_permission_view_menu("schema_access", view_menu_name)
-    if pv:
+    if pv := security_manager.find_permission_view_menu(
+        "schema_access", view_menu_name
+    ):
         security_manager.del_permission_role(
             security_manager.find_role(SCHEMA_ACCESS_ROLE), pv
         )
@@ -175,12 +176,11 @@ class TestRolePermission(SupersetTestCase):
     def tearDown(self):
         if not db.session.is_active:
             db.session.rollback()
-        ds = (
+        if ds := (
             db.session.query(SqlaTable)
             .filter_by(table_name="wb_health_population", schema="temp_schema")
             .first()
-        )
-        if ds:
+        ):
             schema_perm = ds.schema_perm
             ds.schema = get_example_default_schema()
             ds.schema_perm = None
@@ -195,8 +195,7 @@ class TestRolePermission(SupersetTestCase):
 
             delete_schema_perm(schema_perm)
 
-        schema_access_role = security_manager.find_role(SCHEMA_ACCESS_ROLE)
-        if schema_access_role:
+        if schema_access_role := security_manager.find_role(SCHEMA_ACCESS_ROLE):
             gamma_user = security_manager.find_user(username="gamma")
             if schema_access_role in gamma_user.roles:
                 gamma_user.roles.remove(schema_access_role)
