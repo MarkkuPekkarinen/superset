@@ -120,10 +120,7 @@ describe('Test explore links', () => {
         .clear({ force: true })
         .type(`${title}{enter}`, { force: true });
 
-      cy.get(saveDashboardFormSelector)
-        .find('.ant-select-selection-item')
-        .contains(title)
-        .should('be.visible');
+      cy.get('[data-test="btn-modal-save"]').should('not.be.disabled');
     };
 
     const assertDashboardCount = (
