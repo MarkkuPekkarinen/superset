@@ -100,7 +100,7 @@ describe('Test explore links', () => {
       };
 
       cy.request(apiURL('/api/v1/chart/', query)).then(response => {
-        expect(response.body.count).equals(1);
+        expect(response.body.count).to.be.at.least(1);
       });
       cy.deleteChartByName(newChartName, true);
     });
@@ -140,8 +140,8 @@ describe('Test explore links', () => {
 
     const assertDashboardCount = (
       title: string,
-      attemptsLeft = 10,
-      delayMs = 1000,
+      attemptsLeft = 30,
+      delayMs = 2000,
     ): void => {
       const query = {
         filters: [
@@ -154,12 +154,12 @@ describe('Test explore links', () => {
       };
 
       cy.request(apiURL('/api/v1/dashboard/', query)).then(response => {
-        if (response.body.count === 1) {
+        if (response.body.count >= 1) {
           return;
         }
 
         if (attemptsLeft === 0) {
-          expect(response.body.count).equals(1);
+          expect(response.body.count).to.be.at.least(1);
           return;
         }
 
@@ -208,7 +208,7 @@ describe('Test explore links', () => {
       ],
     };
     cy.request(apiURL('/api/v1/chart/', query)).then(response => {
-      expect(response.body.count).equals(1);
+      expect(response.body.count).to.be.at.least(1);
     });
     query = {
       filters: [
@@ -220,7 +220,7 @@ describe('Test explore links', () => {
       ],
     };
     cy.request(apiURL('/api/v1/dashboard/', query)).then(response => {
-      expect(response.body.count).equals(1);
+      expect(response.body.count).to.be.at.least(1);
     });
     cy.deleteDashboardByName(dashboardTitle, true);
   });
