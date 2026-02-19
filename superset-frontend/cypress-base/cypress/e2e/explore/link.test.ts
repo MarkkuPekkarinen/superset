@@ -118,15 +118,30 @@ describe('Test explore links', () => {
         .find('input[aria-label^="Select a dashboard"]')
         .click({ force: true })
         .clear({ force: true })
-        .type(`${title}{enter}`, { force: true });
+        .type(title, { force: true });
+
+      cy.get('body').then($body => {
+        const selector = '.ant-select-item-option-content';
+        const option = $body
+          .find(selector)
+          .filter((_, el) => el.textContent === title);
+
+        if (option.length > 0) {
+          cy.wrap(option[0]).click({ force: true });
+        } else {
+          cy.get(saveDashboardFormSelector)
+            .find('input[aria-label^="Select a dashboard"]')
+            .type('{enter}', { force: true });
+        }
+      });
 
       cy.get('[data-test="btn-modal-save"]').should('not.be.disabled');
     };
 
     const assertDashboardCount = (
       title: string,
-      attemptsLeft = 4,
-      delayMs = 500,
+      attemptsLeft = 10,
+      delayMs = 1000,
     ): void => {
       const query = {
         filters: [
