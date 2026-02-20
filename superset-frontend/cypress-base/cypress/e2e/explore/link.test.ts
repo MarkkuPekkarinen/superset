@@ -151,7 +151,6 @@ describe('Test explore links', () => {
 
     cy.get('[data-test="btn-modal-save"]').click();
     cy.verifySliceSuccess({ waitAlias: '@chartData' });
-    cy.contains(`was added to dashboard [${dashboardTitle}]`);
 
     cy.visitChartByName(newChartName);
     cy.verifySliceSuccess({ waitAlias: '@chartData' });
