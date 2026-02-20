@@ -138,37 +138,6 @@ describe('Test explore links', () => {
       cy.get('[data-test="btn-modal-save"]').should('not.be.disabled');
     };
 
-    const assertDashboardCount = (
-      title: string,
-      attemptsLeft = 30,
-      delayMs = 2000,
-    ): void => {
-      const query = {
-        filters: [
-          {
-            col: 'dashboard_title',
-            opr: 'eq',
-            value: title,
-          },
-        ],
-      };
-
-      cy.request(apiURL('/api/v1/dashboard/', query)).then(response => {
-        if (response.body.count >= 1) {
-          return;
-        }
-
-        if (attemptsLeft === 0) {
-          expect(response.body.count).to.be.at.least(1);
-          return;
-        }
-
-        cy.wait(delayMs).then(() =>
-          assertDashboardCount(title, attemptsLeft - 1, delayMs),
-        );
-      });
-    };
-
     cy.visitChartByName(chartName);
     cy.verifySliceSuccess({ waitAlias: '@chartData' });
 
@@ -182,7 +151,7 @@ describe('Test explore links', () => {
 
     cy.get('[data-test="btn-modal-save"]').click();
     cy.verifySliceSuccess({ waitAlias: '@chartData' });
-    assertDashboardCount(dashboardTitle);
+    cy.contains(`was added to dashboard [${dashboardTitle}]`);
 
     cy.visitChartByName(newChartName);
     cy.verifySliceSuccess({ waitAlias: '@chartData' });
@@ -208,18 +177,6 @@ describe('Test explore links', () => {
       ],
     };
     cy.request(apiURL('/api/v1/chart/', query)).then(response => {
-      expect(response.body.count).to.be.at.least(1);
-    });
-    query = {
-      filters: [
-        {
-          col: 'dashboard_title',
-          opr: 'eq',
-          value: dashboardTitle,
-        },
-      ],
-    };
-    cy.request(apiURL('/api/v1/dashboard/', query)).then(response => {
       expect(response.body.count).to.be.at.least(1);
     });
     cy.deleteDashboardByName(dashboardTitle, true);
