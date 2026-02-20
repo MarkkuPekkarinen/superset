@@ -38,6 +38,7 @@ import {
   LabeledValue,
   Select,
   Space,
+  TreeSelect,
   Constants,
 } from '@superset-ui/core/components';
 import {
@@ -48,6 +49,7 @@ import { FilterBarOrientation } from 'src/dashboard/types';
 import { getDataRecordFormatter, getSelectExtraFormData } from '../../utils';
 import { FilterPluginStyle, StatusMessage } from '../common';
 import { PluginFilterSelectProps, SelectValue } from './types';
+import { buildTreeSelectData, normalizeTreeSelectValue } from './treeUtils';
 
 type DataMaskAction =
   | { type: 'ownState'; ownState: JsonObject }
@@ -142,6 +144,8 @@ export default function PluginFilterSelect(props: PluginFilterSelectProps) {
     inverseSelection,
     defaultToFirstItem,
     searchAllOptions,
+    enableTreeSelect,
+    treeDelimiter,
   } = formData;
 
   const groupby = useMemo(
@@ -314,6 +318,11 @@ export default function PluginFilterSelect(props: PluginFilterSelectProps) {
     }
     return uniqueOptions;
   }, [multiSelect, search, uniqueOptions]);
+
+  const treeData = useMemo(
+    () => buildTreeSelectData(options, treeDelimiter || '/'),
+    [options, treeDelimiter],
+  );
 
   const sortComparator = useCallback(
     (a: LabeledValue, b: LabeledValue) => {
@@ -490,6 +499,10 @@ export default function PluginFilterSelect(props: PluginFilterSelectProps) {
     setExcludeFilterValues(value === 'true');
   };
 
+  const treeSelectValue = multiSelect
+    ? filterState.value || []
+    : filterState.value?.[0];
+
   return (
     <FilterPluginStyle height={height} width={width}>
       <FormItem
@@ -511,39 +524,67 @@ export default function PluginFilterSelect(props: PluginFilterSelectProps) {
               onChange={handleExclusionToggle}
             />
           )}
-          <Select
-            name={formData.nativeFilterId}
-            allowClear
-            allowNewOptions={!searchAllOptions && creatable !== false}
-            allowSelectAll={!searchAllOptions}
-            value={multiSelect ? filterState.value || [] : filterState.value}
-            disabled={isDisabled}
-            getPopupContainer={
-              showOverflow
-                ? () => (parentRef?.current as HTMLElement) || document.body
-                : (trigger: HTMLElement) =>
-                    (trigger?.parentNode as HTMLElement) || document.body
-            }
-            showSearch={showSearch}
-            mode={multiSelect ? 'multiple' : 'single'}
-            placeholder={placeholderText}
-            onClear={() => onSearch('')}
-            onSearch={onSearch}
-            onBlur={handleBlur}
-            onFocus={setFocusedFilter}
-            onMouseEnter={setHoveredFilter}
-            onMouseLeave={unsetHoveredFilter}
-            // @ts-ignore
-            onChange={handleChange}
-            ref={inputRef}
-            loading={isRefreshing}
-            oneLine={filterBarOrientation === FilterBarOrientation.Horizontal}
-            invertSelection={inverseSelection && excludeFilterValues}
-            options={options}
-            sortComparator={sortComparator}
-            onOpenChange={setFilterActive}
-            className="select-container"
-          />
+          {enableTreeSelect ? (
+            <TreeSelect
+              treeData={treeData}
+              value={treeSelectValue}
+              treeCheckable={multiSelect}
+              disabled={isDisabled}
+              showSearch={showSearch}
+              allowClear
+              placeholder={placeholderText}
+              onClear={() => onSearch('')}
+              onSearch={onSearch}
+              onBlur={handleBlur}
+              onFocus={setFocusedFilter}
+              onMouseEnter={setHoveredFilter}
+              onMouseLeave={unsetHoveredFilter}
+              getPopupContainer={
+                showOverflow
+                  ? () => (parentRef?.current as HTMLElement) || document.body
+                  : (trigger: HTMLElement) =>
+                      (trigger?.parentNode as HTMLElement) || document.body
+              }
+              treeNodeFilterProp="title"
+              onChange={value => handleChange(normalizeTreeSelectValue(value))}
+              onOpenChange={setFilterActive}
+              className="select-container"
+            />
+          ) : (
+            <Select
+              name={formData.nativeFilterId}
+              allowClear
+              allowNewOptions={!searchAllOptions && creatable !== false}
+              allowSelectAll={!searchAllOptions}
+              value={multiSelect ? filterState.value || [] : filterState.value}
+              disabled={isDisabled}
+              getPopupContainer={
+                showOverflow
+                  ? () => (parentRef?.current as HTMLElement) || document.body
+                  : (trigger: HTMLElement) =>
+                      (trigger?.parentNode as HTMLElement) || document.body
+              }
+              showSearch={showSearch}
+              mode={multiSelect ? 'multiple' : 'single'}
+              placeholder={placeholderText}
+              onClear={() => onSearch('')}
+              onSearch={onSearch}
+              onBlur={handleBlur}
+              onFocus={setFocusedFilter}
+              onMouseEnter={setHoveredFilter}
+              onMouseLeave={unsetHoveredFilter}
+              // @ts-ignore
+              onChange={handleChange}
+              ref={inputRef}
+              loading={isRefreshing}
+              oneLine={filterBarOrientation === FilterBarOrientation.Horizontal}
+              invertSelection={inverseSelection && excludeFilterValues}
+              options={options}
+              sortComparator={sortComparator}
+              onOpenChange={setFilterActive}
+              className="select-container"
+            />
+          )}
         </StyledSpace>
       </FormItem>
     </FilterPluginStyle>

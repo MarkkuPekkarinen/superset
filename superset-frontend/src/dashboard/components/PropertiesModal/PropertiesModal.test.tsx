@@ -51,62 +51,56 @@ spyColorSchemeControlWrapper.mockImplementation(
   () => (<div>ColorSchemeControlWrapper</div>) as any,
 );
 
-fetchMock.get(
-  'http://localhost/api/v1/dashboard/related/roles?q=(filter:%27%27,page:0,page_size:100)',
-  {
-    body: {
-      count: 6,
-      result: [
-        {
-          text: 'Admin',
-          value: 1,
-          extra: {},
-        },
-        {
-          text: 'Alpha',
-          value: 3,
-          extra: {},
-        },
-        {
-          text: 'Gamma',
-          value: 4,
-          extra: {},
-        },
-        {
-          text: 'Public',
-          value: 2,
-          extra: {},
-        },
-        {
-          text: 'sql_lab',
-          value: 6,
-          extra: {},
-        },
-      ],
-    },
+fetchMock.get('glob:http://localhost/api/v1/dashboard/related/roles?q=*', {
+  body: {
+    count: 6,
+    result: [
+      {
+        text: 'Admin',
+        value: 1,
+        extra: {},
+      },
+      {
+        text: 'Alpha',
+        value: 3,
+        extra: {},
+      },
+      {
+        text: 'Gamma',
+        value: 4,
+        extra: {},
+      },
+      {
+        text: 'Public',
+        value: 2,
+        extra: {},
+      },
+      {
+        text: 'sql_lab',
+        value: 6,
+        extra: {},
+      },
+    ],
   },
-);
+});
 
-fetchMock.get(
-  'http://localhost/api/v1/dashboard/related/owners?q=(filter:%27%27,page:0,page_size:100)',
-  {
-    body: {
-      count: 1,
-      result: [
-        {
-          text: 'Superset Admin',
-          value: 1,
-          extra: { active: true },
-        },
-        {
-          text: 'Inactive Admin',
-          value: 2,
-          extra: { active: false },
-        },
-      ],
-    },
+fetchMock.get('glob:http://localhost/api/v1/dashboard/related/owners?q=*', {
+  body: {
+    count: 1,
+    result: [
+      {
+        text: 'Superset Admin',
+        value: 1,
+        extra: { active: true },
+      },
+      {
+        text: 'Inactive Admin',
+        value: 2,
+        extra: { active: false },
+      },
+    ],
   },
-);
+});
 
 const dashboardInfo = {
   certified_by: 'John Doe',

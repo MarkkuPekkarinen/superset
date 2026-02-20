@@ -466,6 +466,29 @@ export function checkNativeFilterTooltip(index: number, value: string) {
 }
 
 /** ************************************************************************
+ * Check Native Filter tooltip content by control label text
+ * @param label: visible control label near the tooltip icon
+ * @param value: tooltip value to check
+ * @return {null}
+ * @summary helper for checking native filter tooltip content by label
+ ************************************************************************* */
+export function checkNativeFilterTooltipByLabel(label: string, value: string) {
+  cy.contains(label)
+    .closest('.ant-form-item')
+    .find(nativeFilters.filterConfigurationSections.infoTooltip)
+    .first()
+    .trigger('mouseover');
+
+  cy.contains(value).should('be.visible');
+
+  cy.contains(label)
+    .closest('.ant-form-item')
+    .find(nativeFilters.filterConfigurationSections.infoTooltip)
+    .first()
+    .trigger('mouseout');
+}
+
+/** ************************************************************************
  * Apply advanced time range filter on dashboard
  * @param startRange: starting time range
  * @param endRange: ending time range

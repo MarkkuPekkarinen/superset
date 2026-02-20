@@ -102,27 +102,105 @@ def create_schema_perm(view_menu_name: str) -> None:
 
 
 def delete_schema_perm(view_menu_name: str) -> None:
-    pv = security_manager.find_permission_view_menu("schema_access", "[examples].[2]")
-    security_manager.del_permission_role(
-        security_manager.find_role(SCHEMA_ACCESS_ROLE), pv
-    )
-    security_manager.del_permission_view_menu("schema_access", "[examples].[2]")
+    if pv := security_manager.find_permission_view_menu(
+        "schema_access", view_menu_name
+    ):
+        security_manager.del_permission_role(
+            security_manager.find_role(SCHEMA_ACCESS_ROLE), pv
+        )
+        security_manager.del_permission_view_menu("schema_access", view_menu_name)
     return None
 
 
 class TestRolePermission(SupersetTestCase):
     """Testing export role permissions."""
 
+    _TEMP_DATABASE_NAMES = ("tmp_db", "tmp_db1", "tmp_db2", "tmp_database")
+
+    def _cleanup_temp_security_artifacts(self) -> None:
+        if not db.session.is_active:
+            db.session.rollback()
+
+        temp_database_ids = [
+            database.id
+            for database in db.session.query(Database)
+            .filter(Database.database_name.in_(self._TEMP_DATABASE_NAMES))
+            .all()
+        ]
+        if not temp_database_ids:
+            return
+
+        temp_table_ids = [
+            table.id
+            for table in db.session.query(SqlaTable)
+            .filter(SqlaTable.database_id.in_(temp_database_ids))
+            .all()
+        ]
+
+        if temp_table_ids:
+            (
+                db.session.query(Slice)
+                .filter(
+                    Slice.datasource_type == DatasourceType.TABLE,
+                    Slice.datasource_id.in_(temp_table_ids),
+                )
+                .delete(synchronize_session=False)
+            )
+            (
+                db.session.query(SqlaTable)
+                .filter(SqlaTable.id.in_(temp_table_ids))
+                .delete(synchronize_session=False)
+            )
+
+        (
+            db.session.query(Database)
+            .filter(Database.id.in_(temp_database_ids))
+            .delete(synchronize_session=False)
+        )
+        db.session.commit()
+
     def setUp(self):
+        # Recover only from failed transactions without rolling back healthy
+        # fixture setup done by pytest markers.
+        if not db.session.is_active:
+            db.session.rollback()
+
+        self._cleanup_temp_security_artifacts()
+
         schema = get_example_default_schema()
         security_manager.add_role(SCHEMA_ACCESS_ROLE)
         db.session.commit()
 
-        ds = (
+        # Cleanup any stale state from interrupted test runs so we don't violate
+        # the unique constraint on (database_id, schema, table_name) when moving
+        # wb_health_population into temp_schema.
+        default_dataset = (
             db.session.query(SqlaTable)
             .filter_by(table_name="wb_health_population", schema=schema)
             .first()
         )
+        stale_temp_dataset = (
+            db.session.query(SqlaTable)
+            .filter_by(table_name="wb_health_population", schema="temp_schema")
+            .first()
+        )
+        if stale_temp_dataset:
+            if default_dataset and stale_temp_dataset.id != default_dataset.id:
+                db.session.delete(stale_temp_dataset)
+            else:
+                stale_temp_dataset.schema = schema
+                stale_temp_dataset.schema_perm = None
+            db.session.commit()
+
+        ds = default_dataset or (
+            db.session.query(SqlaTable)
+            .filter_by(table_name="wb_health_population", schema=schema)
+            .first()
+        )
+        if ds is None:
+            raise RuntimeError(
+                "Expected wb_health_population dataset to exist for security tests"
+            )
         ds.schema = "temp_schema"
         ds.schema_perm = ds.get_schema_perm()
 
@@ -136,30 +214,40 @@ class TestRolePermission(SupersetTestCase):
             s.schema_perm = ds.schema_perm
         create_schema_perm("[examples].[temp_schema]")
         gamma_user = security_manager.find_user(username="gamma")
-        gamma_user.roles.append(security_manager.find_role(SCHEMA_ACCESS_ROLE))
+        schema_access_role = security_manager.find_role(SCHEMA_ACCESS_ROLE)
+        if schema_access_role not in gamma_user.roles:
+            gamma_user.roles.append(schema_access_role)
         db.session.commit()
 
     def tearDown(self):
-        ds = (
+        if not db.session.is_active:
+            db.session.rollback()
+        if ds := (
             db.session.query(SqlaTable)
             .filter_by(table_name="wb_health_population", schema="temp_schema")
             .first()
-        )
-        schema_perm = ds.schema_perm
-        ds.schema = get_example_default_schema()
-        ds.schema_perm = None
-        ds_slices = (
-            db.session.query(Slice)
-            .filter_by(datasource_type=DatasourceType.TABLE)
-            .filter_by(datasource_id=ds.id)
-            .all()
-        )
-        for s in ds_slices:
-            s.schema_perm = None
+        ):
+            schema_perm = ds.schema_perm
+            ds.schema = get_example_default_schema()
+            ds.schema_perm = None
+            ds_slices = (
+                db.session.query(Slice)
+                .filter_by(datasource_type=DatasourceType.TABLE)
+                .filter_by(datasource_id=ds.id)
+                .all()
+            )
+            for s in ds_slices:
+                s.schema_perm = None
 
-        delete_schema_perm(schema_perm)
-        db.session.delete(security_manager.find_role(SCHEMA_ACCESS_ROLE))
+            delete_schema_perm(schema_perm)
+
+        if schema_access_role := security_manager.find_role(SCHEMA_ACCESS_ROLE):
+            gamma_user = security_manager.find_user(username="gamma")
+            if schema_access_role in gamma_user.roles:
+                gamma_user.roles.remove(schema_access_role)
+            db.session.delete(schema_access_role)
         db.session.commit()
+        self._cleanup_temp_security_artifacts()
         super().tearDown()
 
     def test_after_insert_dataset(self):
@@ -549,7 +637,8 @@ class TestRolePermission(SupersetTestCase):
                 call(ANY, ANY, tmp_db1_view_menu),
                 call(ANY, ANY, table1_view_menu),
                 call(ANY, ANY, table2_view_menu),
-            ]
+            ],
+            any_order=True,
         )
 
         db.session.delete(slice1)

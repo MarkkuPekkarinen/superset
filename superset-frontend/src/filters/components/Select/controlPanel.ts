@@ -27,6 +27,8 @@ const {
   enableEmptyFilter,
   inverseSelection,
   multiSelect,
+  enableTreeSelect,
+  treeDelimiter,
   creatable,
   defaultToFirstItem,
   searchAllOptions,
@@ -75,6 +77,29 @@ const config: ControlPanelConfig = {
               label: t('Allow creation of new values'),
               default: creatable,
               affectsDataMask: true,
+              renderTrigger: true,
+            },
+          },
+        ],
+        [
+          {
+            name: 'enableTreeSelect',
+            config: {
+              type: 'CheckboxControl',
+              label: t('Use TreeSelect hierarchy UI'),
+              default: enableTreeSelect,
+              renderTrigger: true,
+              resetConfig: true,
+            },
+          },
+        ],
+        [
+          {
+            name: 'treeDelimiter',
+            config: {
+              type: 'TextControl',
+              label: t('Tree path delimiter'),
+              default: treeDelimiter,
               renderTrigger: true,
             },
           },

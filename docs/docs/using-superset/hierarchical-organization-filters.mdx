@@ -1,0 +1,271 @@
+---
+title: Hierarchical organization filters (PostgreSQL)
+sidebar_position: 12
+---
+
+This page provides an **end-to-end, copy-pasteable implementation** for organization hierarchy filters in Superset.
+
+You get two backend variants:
+
+1. PostgreSQL `ltree` (recommended)
+2. Text path hierarchy (`company/europe/finland`)
+
+And one frontend variant:
+
+3. Custom TreeSelect control that allows users to expand/collapse and select from any hierarchy level.
+
+## 1) Complete PostgreSQL `ltree` implementation
+
+### 1.1 Create schema, extension, table, indexes
+
+```sql
+CREATE SCHEMA IF NOT EXISTS demo;
+CREATE EXTENSION IF NOT EXISTS ltree;
+
+DROP TABLE IF EXISTS demo.org_units;
+CREATE TABLE demo.org_units (
+  org_id BIGSERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  path LTREE NOT NULL UNIQUE
+);
+
+CREATE INDEX IF NOT EXISTS idx_org_units_path_gist
+  ON demo.org_units USING GIST (path);
+```
+
+### 1.2 Seed sample hierarchy
+
+```sql
+INSERT INTO demo.org_units (name, path) VALUES
+('Company', 'company'),
+('Europe', 'company.europe'),
+('Finland', 'company.europe.finland'),
+('Helsinki', 'company.europe.finland.helsinki'),
+('Espoo', 'company.europe.finland.espoo'),
+('Germany', 'company.europe.germany'),
+('Berlin', 'company.europe.germany.berlin'),
+('Americas', 'company.americas'),
+('USA', 'company.americas.usa'),
+('New York', 'company.americas.usa.new_york');
+```
+
+### 1.3 Create view for filter options and tree metadata
+
+```sql
+CREATE OR REPLACE VIEW demo.v_org_filter_options AS
+SELECT
+  org_id,
+  name,
+  path::text AS path_text,
+  nlevel(path) AS depth,
+  CASE
+    WHEN nlevel(path) = 1 THEN NULL
+    ELSE subpath(path, 0, nlevel(path) - 1)::text
+  END AS parent_path_text
+FROM demo.org_units
+ORDER BY path;
+```
+
+### 1.4 Use this SQL in Superset charts (descendant filter)
+
+```sql
+-- expected parameter: :selected_paths as text[]
+SELECT ou.*
+FROM demo.org_units ou
+WHERE coalesce(cardinality(:selected_paths::text[]), 0) = 0
+   OR EXISTS (
+        SELECT 1
+        FROM unnest(:selected_paths::text[]) AS p(path_txt)
+        WHERE ou.path <@ p.path_txt::ltree
+   );
+```
+
+## 2) Complete text-path implementation
+
+Use this if you cannot use `ltree`.
+
+### 2.1 Create table + index
+
+```sql
+DROP TABLE IF EXISTS demo.org_units_text;
+CREATE TABLE demo.org_units_text (
+  org_id BIGSERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  path_text TEXT NOT NULL UNIQUE
+);
+
+CREATE INDEX IF NOT EXISTS idx_org_units_text_path_pattern
+  ON demo.org_units_text (path_text text_pattern_ops);
+```
+
+### 2.2 Seed sample hierarchy
+
+```sql
+INSERT INTO demo.org_units_text (name, path_text) VALUES
+('Company', 'company'),
+('Europe', 'company/europe'),
+('Finland', 'company/europe/finland'),
+('Helsinki', 'company/europe/finland/helsinki'),
+('Espoo', 'company/europe/finland/espoo'),
+('Germany', 'company/europe/germany'),
+('Berlin', 'company/europe/germany/berlin'),
+('Americas', 'company/americas'),
+('USA', 'company/americas/usa'),
+('New York', 'company/americas/usa/new_york');
+```
+
+### 2.3 Create view for filter options and tree metadata
+
+```sql
+CREATE OR REPLACE VIEW demo.v_org_filter_options_text AS
+SELECT
+  org_id,
+  name,
+  path_text,
+  array_length(string_to_array(path_text, '/'), 1) AS depth,
+  CASE
+    WHEN array_length(string_to_array(path_text, '/'), 1) = 1 THEN NULL
+    ELSE array_to_string(
+      (string_to_array(path_text, '/'))[1:array_length(string_to_array(path_text, '/'), 1) - 1],
+      '/'
+    )
+  END AS parent_path_text
+FROM demo.org_units_text
+ORDER BY path_text;
+```
+
+### 2.4 Use this SQL in Superset charts (descendant filter)
+
+```sql
+-- expected parameter: :selected_paths as text[]
+SELECT out.*
+FROM demo.org_units_text out
+WHERE coalesce(cardinality(:selected_paths::text[]), 0) = 0
+   OR EXISTS (
+        SELECT 1
+        FROM unnest(:selected_paths::text[]) AS p(path_txt)
+        WHERE out.path_text = p.path_txt
+           OR out.path_text LIKE p.path_txt || '/%'
+   );
+```
+
+## 3) Superset Native Filter configuration (no custom UI)
+
+If custom frontend work is not possible, configure:
+
+1. Create dataset from `demo.v_org_filter_options` (or `_text`).
+2. Add a **Select** native filter.
+3. Target column: `path_text`.
+4. Enable **Multiple select**.
+5. Optionally add cascading level filters by `depth` and parent-child columns.
+
+This gives usable hierarchy filtering, but not full tree expand/collapse in one control.
+
+## 4) Complete TreeSelect frontend example (custom control)
+
+Use this when you need a true tree picker UX.
+
+### 4.1 Build Ant TreeSelect data from `path_text`
+
+```ts
+export interface TreeNode {
+  value: string;
+  title: string;
+  children?: TreeNode[];
+}
+
+type InternalNode = {
+  __value: string;
+  __label: string;
+  __children: Record<string, InternalNode>;
+};
+
+export function buildTreeFromPaths(
+  rows: Array<{ name: string; path_text: string }>,
+): TreeNode[] {
+  const root: Record<string, InternalNode> = {};
+
+  rows.forEach(({ name, path_text }) => {
+    const parts = path_text.split('/').filter(Boolean);
+    let cursor = root;
+
+    parts.forEach((part, i) => {
+      const fullPath = parts.slice(0, i + 1).join('/');
+      if (!cursor[part]) {
+        cursor[part] = {
+          __value: fullPath,
+          __label: i === parts.length - 1 ? name : part,
+          __children: {},
+        };
+      }
+      if (i === parts.length - 1) {
+        cursor[part].__label = name;
+      }
+      cursor = cursor[part].__children;
+    });
+  });
+
+  const toTree = (obj: Record<string, InternalNode>): TreeNode[] =>
+    Object.values(obj)
+      .sort((a, b) => a.__value.localeCompare(b.__value))
+      .map(node => ({
+        value: node.__value,
+        title: node.__label,
+        children: toTree(node.__children),
+      }));
+
+  return toTree(root);
+}
+```
+
+### 4.2 Render TreeSelect and send selected paths to native filter state
+
+```tsx
+import React, { useMemo, useState } from 'react';
+import { TreeSelect } from '@superset-ui/core';
+
+import { buildTreeFromPaths } from './buildTreeFromPaths';
+
+interface Row {
+  name: string;
+  path_text: string;
+}
+
+interface Props {
+  rows: Row[];
+  onApply: (selectedPaths: string[]) => void;
+}
+
+export default function OrgTreeFilter({ rows, onApply }: Props) {
+  const [value, setValue] = useState<string[]>([]);
+  const treeData = useMemo(() => buildTreeFromPaths(rows), [rows]);
+
+  return (
+    <TreeSelect
+      treeData={treeData}
+      value={value}
+      treeCheckable
+      showSearch
+      allowClear
+      multiple
+      placeholder="Select organization"
+      onChange={(next: string[]) => {
+        const selected = Array.isArray(next) ? next : [];
+        setValue(selected);
+        onApply(selected);
+      }}
+      style={{ width: '100%' }}
+    />
+  );
+}
+```
+
+### 4.3 Chart query contract
+
+Your custom control should provide `selectedPaths: string[]` as filter payload. In SQL, consume that array with the descendant pattern shown in sections **1.4** or **2.4**.
+
+## 5) Recommended choice
+
+- Prefer **`ltree`** for correctness and performance.
+- Use text paths only if `ltree` is unavailable.
+- Use custom TreeSelect when one-control expand/collapse UX is a hard requirement.

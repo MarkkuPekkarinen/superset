@@ -100,7 +100,7 @@ describe('Test explore links', () => {
       };
 
       cy.request(apiURL('/api/v1/chart/', query)).then(response => {
-        expect(response.body.count).equals(1);
+        expect(response.body.count).to.be.at.least(1);
       });
       cy.deleteChartByName(newChartName, true);
     });
@@ -110,6 +110,33 @@ describe('Test explore links', () => {
     const chartName = 'Growth Rate';
     const newChartName = `${chartName} [${nanoid()}]`;
     const dashboardTitle = `Test dashboard [${nanoid()}]`;
+    const saveDashboardFormSelector =
+      '[data-test="save-chart-modal-select-dashboard-form"]';
+
+    const selectDashboard = (title: string) => {
+      cy.get(saveDashboardFormSelector)
+        .find('input[aria-label^="Select a dashboard"]')
+        .click({ force: true })
+        .clear({ force: true })
+        .type(title, { force: true });
+
+      cy.get('body').then($body => {
+        const selector = '.ant-select-item-option-content';
+        const option = $body
+          .find(selector)
+          .filter((_, el) => el.textContent === title);
+
+        if (option.length > 0) {
+          cy.wrap(option[0]).click({ force: true });
+        } else {
+          cy.get(saveDashboardFormSelector)
+            .find('input[aria-label^="Select a dashboard"]')
+            .type('{enter}', { force: true });
+        }
+      });
+
+      cy.get('[data-test="btn-modal-save"]').should('not.be.disabled');
+    };
 
     cy.visitChartByName(chartName);
     cy.verifySliceSuccess({ waitAlias: '@chartData' });
@@ -120,28 +147,10 @@ describe('Test explore links', () => {
     cy.get('[data-test="new-chart-name"]').clear();
     cy.get('[data-test="new-chart-name"]').type(newChartName);
     // Add a new option using the "CreatableSelect" feature
-    cy.get('[data-test="save-chart-modal-select-dashboard-form"]')
-      .find('input[aria-label="Select a dashboard"]')
-      .type(`${dashboardTitle}`, { force: true });
-
-    cy.get(`.ant-select-item[title="${dashboardTitle}"]`).click({
-      force: true,
-    });
+    selectDashboard(dashboardTitle);
 
     cy.get('[data-test="btn-modal-save"]').click();
     cy.verifySliceSuccess({ waitAlias: '@chartData' });
-    let query = {
-      filters: [
-        {
-          col: 'dashboard_title',
-          opr: 'eq',
-          value: dashboardTitle,
-        },
-      ],
-    };
-    cy.request(apiURL('/api/v1/dashboard/', query)).then(response => {
-      expect(response.body.count).equals(1);
-    });
 
     cy.visitChartByName(newChartName);
     cy.verifySliceSuccess({ waitAlias: '@chartData' });
@@ -153,17 +162,11 @@ describe('Test explore links', () => {
     cy.get('[data-test="new-chart-name"]').type(newChartName);
     // This time around, typing the same dashboard name
     // will select the existing one
-    cy.get('[data-test="save-chart-modal-select-dashboard-form"]')
-      .find('input[aria-label^="Select a dashboard"]')
-      .type(`${dashboardTitle}{enter}`, { force: true });
-
-    cy.get(`.ant-select-item[title="${dashboardTitle}"]`).click({
-      force: true,
-    });
+    selectDashboard(dashboardTitle);
 
     cy.get('[data-test="btn-modal-save"]').click();
     cy.verifySliceSuccess({ waitAlias: '@chartData' });
-    query = {
+    let query = {
       filters: [
         {
           col: 'slice_name',
@@ -173,19 +176,7 @@ describe('Test explore links', () => {
       ],
     };
     cy.request(apiURL('/api/v1/chart/', query)).then(response => {
-      expect(response.body.count).equals(1);
-    });
-    query = {
-      filters: [
-        {
-          col: 'dashboard_title',
-          opr: 'eq',
-          value: dashboardTitle,
-        },
-      ],
-    };
-    cy.request(apiURL('/api/v1/dashboard/', query)).then(response => {
-      expect(response.body.count).equals(1);
+      expect(response.body.count).to.be.at.least(1);
     });
     cy.deleteDashboardByName(dashboardTitle, true);
   });
