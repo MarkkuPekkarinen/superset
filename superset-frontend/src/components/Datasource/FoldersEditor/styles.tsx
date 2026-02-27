@@ -22,7 +22,7 @@ export const FoldersContainer = styled.div`
   display: flex;
   flex-direction: column;
   position: relative;
-  height: 70vh;
+  height: 100%;
   gap: ${({ theme }) => theme.paddingMD}px;
 `;
 
@@ -51,6 +51,20 @@ export const FoldersActions = styled.div`
   ${({ theme }) => `
     display: flex;
     gap: ${theme.paddingSM}px;
+  `}
+`;
+
+export const FoldersActionsRow = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.paddingXS}px;
+`;
+
+export const SelectionCount = styled.div`
+  ${({ theme }) => `
+    align-self: flex-end;
+    font-size: ${theme.fontSizeSM}px;
+    color: ${theme.colorTextSecondary};
   `}
 `;
 
