@@ -64,10 +64,10 @@
     "@storybook/preview-api": "^8.6.17",
     "@storybook/theming": "^8.6.15",
     "@superset-ui/core": "^0.20.4",
-    "@swc/core": "^1.15.13",
+    "@swc/core": "^1.15.17",
     "antd": "^6.3.1",
     "baseline-browser-mapping": "^2.10.0",
-    "caniuse-lite": "^1.0.30001770",
+    "caniuse-lite": "^1.0.30001774",
     "docusaurus-plugin-openapi-docs": "^4.6.0",
     "docusaurus-theme-openapi-docs": "^4.6.0",
     "js-yaml": "^4.1.1",
@@ -104,7 +104,7 @@
     "prettier": "^3.8.1",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.56.1",
-    "webpack": "^5.105.2"
+    "webpack": "^5.105.3"
   },
   "browserslist": {
     "production": [
