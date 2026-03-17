@@ -421,6 +421,7 @@ BABEL_DEFAULT_FOLDER = "superset/translations"
 LANGUAGES = {
     "en": {"flag": "us", "name": "English"},
     "es": {"flag": "es", "name": "Spanish"},
+    "fi": {"flag": "fi", "name": "Finnish"},
     "it": {"flag": "it", "name": "Italian"},
     "fr": {"flag": "fr", "name": "French"},
     "zh": {"flag": "cn", "name": "Chinese"},
