@@ -435,6 +435,8 @@ LANGUAGES = {
     "ko": {"flag": "kr", "name": "Korean"},
     "sk": {"flag": "sk", "name": "Slovak"},
     "sl": {"flag": "si", "name": "Slovenian"},
+    "sv": {"flag": "se", "name": "Swedish"},
+    "et": {"flag": "ee", "name": "Estonian"},
     "nl": {"flag": "nl", "name": "Dutch"},
     "uk": {"flag": "uk", "name": "Ukranian"},
     "mi": {"flag": "nz", "name": "Māori"},

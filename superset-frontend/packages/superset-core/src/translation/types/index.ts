@@ -25,16 +25,29 @@ export { default as __hack_reexport_jed } from './jed';
  * Superset supported languages.
  */
 export type Locale =
+  | 'ar'
+  | 'ca'
   | 'de'
   | 'en'
   | 'es'
+  | 'et'
+  | 'fa'
+  | 'fi'
   | 'fr'
   | 'it'
   | 'ja'
   | 'ko'
+  | 'mi'
+  | 'nl'
+  | 'pl'
   | 'pt'
   | 'pt_BR'
   | 'ru'
+  | 'sk'
+  | 'sl'
+  | 'sv'
+  | 'tr'
+  | 'uk'
   | 'zh'
   | 'zh_TW'; // supported locales in Superset
 

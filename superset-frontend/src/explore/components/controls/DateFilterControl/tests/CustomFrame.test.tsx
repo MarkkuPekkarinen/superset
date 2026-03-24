@@ -249,6 +249,27 @@ test('should translate Date Picker', async () => {
   expect(screen.getByText('di')).toBeInTheDocument();
 });
 
+test('should translate Date Picker for Swedish locale', async () => {
+  const onChange = jest.fn();
+  const store = mockStore({
+    common: { locale: 'sv' },
+  });
+  render(<CustomFrame onChange={onChange} value={specificValue} />, {
+    store,
+  });
+  await waitForElementToBeRemoved(() => screen.queryByLabelText('Loading'));
+  userEvent.click(screen.getAllByRole('img', { name: 'calendar' })[0]);
+  expect(screen.getByText('2021')).toBeInTheDocument();
+
+  expect(screen.getByText('må')).toBeInTheDocument();
+  expect(screen.getByText('ti')).toBeInTheDocument();
+  expect(screen.getByText('on')).toBeInTheDocument();
+  expect(screen.getByText('to')).toBeInTheDocument();
+  expect(screen.getByText('fr')).toBeInTheDocument();
+  expect(screen.getByText('lö')).toBeInTheDocument();
+  expect(screen.getByText('sö')).toBeInTheDocument();
+});
+
 test('calls onChange when START Specific Date/Time is selected', async () => {
   const onChange = jest.fn();
   render(
