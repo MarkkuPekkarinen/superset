@@ -28,6 +28,8 @@ export type Locale =
   | 'de'
   | 'en'
   | 'es'
+  | 'et'
+  | 'fi'
   | 'fr'
   | 'it'
   | 'ja'
@@ -35,6 +37,7 @@ export type Locale =
   | 'pt'
   | 'pt_BR'
   | 'ru'
+  | 'sv'
   | 'zh'
   | 'zh_TW'; // supported locales in Superset
 
