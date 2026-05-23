@@ -47,10 +47,10 @@ fi
 # Choose whether to use pip cache
 if ${USE_CACHE}; then
   echo "Using pip cache..."
-  uv pip install "${ARGS[@]}"
+  UV_INSECURE_HOST="pypi.org files.pythonhosted.org" uv pip install --native-tls "${ARGS[@]}"
 else
   echo "Disabling pip cache..."
-  uv pip install --no-cache-dir "${ARGS[@]}"
+  UV_INSECURE_HOST="pypi.org files.pythonhosted.org" uv pip install --native-tls --no-cache-dir "${ARGS[@]}"
 fi
 
 # Remove build-essential if it was installed

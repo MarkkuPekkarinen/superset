@@ -64,7 +64,12 @@ RUN --mount=type=bind,source=./superset-frontend/package.json,target=./package.j
     --mount=type=bind,source=./superset-frontend/package-lock.json,target=./package-lock.json \
     --mount=type=cache,target=/root/.cache \
     --mount=type=cache,target=/root/.npm \
+    --mount=type=secret,id=corp_ca,target=/tmp/corp_ca_bundle.pem,required=false \
     if [ "${DEV_MODE}" = "false" ]; then \
+        if [ -f /tmp/corp_ca_bundle.pem ]; then \
+            export NODE_EXTRA_CA_CERTS=/tmp/corp_ca_bundle.pem; \
+            npm config set cafile /tmp/corp_ca_bundle.pem; \
+        fi; \
         npm ci; \
     else \
         echo "Skipping 'npm ci' in dev mode"; \
@@ -113,7 +118,12 @@ RUN useradd --user-group -d ${SUPERSET_HOME} -m --no-log-init --shell /bin/bash 
 # Some bash scripts needed throughout the layers
 COPY --chmod=755 docker/*.sh /app/docker/
 
-RUN pip install --no-cache-dir --upgrade uv
+RUN --mount=type=secret,id=corp_ca,target=/tmp/corp_ca_bundle.pem,required=false \
+    if [ -f /tmp/corp_ca_bundle.pem ]; then \
+      awk 'BEGIN {c=0} /-----BEGIN CERTIFICATE-----/ {c++} {print > ("/usr/local/share/ca-certificates/corp_ca_" c ".crt")}' /tmp/corp_ca_bundle.pem; \
+      update-ca-certificates; \
+    fi \
+    && pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --no-cache-dir --upgrade uv
 
 # Using uv as it's faster/simpler than pip
 RUN uv venv /app/.venv
@@ -148,7 +158,8 @@ ENV SUPERSET_HOME="/app/superset_home" \
     SUPERSET_ENV="production" \
     FLASK_APP="superset.app:create_app()" \
     PYTHONPATH="/app/pythonpath" \
-    SUPERSET_PORT="8088"
+    SUPERSET_PORT="8088" \
+    UV_INSECURE_HOST="pypi.org files.pythonhosted.org"
 
 # Copy the entrypoints, make them executable in userspace
 COPY --chmod=755 docker/entrypoints /app/docker/entrypoints
